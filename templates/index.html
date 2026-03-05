@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>移动井字棋 - 自由移动版</title>
+    <style>
+        :root {
+            --red: #ff4757;
+            --blue: #2e86de;
+            --bg: #f5f6fa;
+            --cell-bg: #ffffff;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; background-color: var(--bg);
+            font-family: -apple-system, system-ui, sans-serif;
+            touch-action: manipulation;
+        }
+
+        .header { width: 100%; padding: 25px 0; text-align: center; }
+        #status { font-size: 1.6rem; font-weight: 800; margin-bottom: 5px; transition: 0.3s; }
+        .sub-status { font-size: 0.9rem; color: #a4b0be; letter-spacing: 1px; }
+
+        .mode-select { margin: 15px 0; display: flex; gap: 8px; }
+        .btn-mode {
+            padding: 6px 15px; border: 2px solid #dcdde1; border-radius: 20px;
+            background: transparent; color: #7f8c8d; font-size: 0.85rem; font-weight: bold;
+        }
+        .btn-mode.active { border-color: #2f3542; color: #2f3542; background: #fff; }
+
+        /* 棋盘布局 */
+        .board {
+            display: grid; grid-template-columns: repeat(3, 95px);
+            grid-template-rows: repeat(3, 95px); gap: 15px;
+            padding: 15px; background: #dcdde1; border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .cell {
+            width: 95px; height: 95px; background: var(--cell-bg);
+            border-radius: 15px; display: flex; align-items: center;
+            justify-content: center; font-size: 3rem; font-weight: 900;
+            cursor: pointer; position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 棋子颜色 */
+        .p-X { color: var(--red); }
+        .p-O { color: var(--blue); }
+
+        /* 选中棋子的呼吸效果 */
+        .selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0,0,0,0.15);
+            outline: 4px solid #747d8c;
+            z-index: 2;
+        }
+
+        /* 可移动目标的提示 */
+        .can-move-to::after {
+            content: ''; width: 20px; height: 20px;
+            background: rgba(46, 213, 115, 0.3);
+            border-radius: 50%; animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        .winner-cell { background: #2ed573 !important; color: white !important; }
+
+        .footer { margin-top: auto; padding-bottom: 40px; }
+        #reset-btn {
+            background: #2f3542; color: white; padding: 14px 50px;
+            border-radius: 50px; border: none; font-size: 1rem; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div id="status">加载中...</div>
+        <div class="sub-status" id="hint">准备就绪</div>
+        
+        <div class="mode-select">
+            <button class="btn-mode active" id="mode-pvp">双人对战模式</button>
+            <button class="btn-mode" id="mode-pve">随机人机模式</button>
+        </div>
+    </div>
+
+    <div class="board" id="board">
+        <div class="cell" data-i="0"></div>
+        <div class="cell" data-i="1"></div>
+        <div class="cell" data-i="2"></div>
+        <div class="cell" data-i="3"></div>
+        <div class="cell" data-i="4"></div>
+        <div class="cell" data-i="5"></div>
+        <div class="cell" data-i="6"></div>
+        <div class="cell" data-i="7"></div>
+        <div class="cell" data-i="8"></div>
+    </div>
+
+    <div class="footer">
+        <button id="reset-btn">重新开启对局</button>
+    </div>
+
+    <script>
+        const state = {
+            board: Array(9).fill(null),
+            currentPlayer: 'X',
+            pieces: { X: 0, O: 0 },
+            selected: null,
+            isOver: false,
+            vsAI: false
+        };
+
+        const els = {
+            cells: document.querySelectorAll('.cell'),
+            status: document.getElementById('status'),
+            hint: document.getElementById('hint'),
+            reset: document.getElementById('reset-btn'),
+            pvp: document.getElementById('mode-pvp'),
+            pve: document.getElementById('mode-pve')
+        };
+
+        function init() {
+            els.cells.forEach(c => c.onclick = () => handleCellClick(parseInt(c.dataset.i)));
+            els.reset.onclick = reset;
+            els.pvp.onclick = () => setMode(false);
+            els.pve.onclick = () => setMode(true);
+            updateUI();
+        }
+
+        function setMode(isAI) {
+            state.vsAI = isAI;
+            els.pvp.classList.toggle('active', !isAI);
+            els.pve.classList.toggle('active', isAI);
+            reset();
+        }
+
+        function handleCellClick(idx) {
+            if (state.isOver || (state.vsAI && state.currentPlayer === 'O')) return;
+            
+            const p = state.currentPlayer;
+
+            // 1. 放置阶段 (未满3子)
+            if (state.pieces[p] < 3) {
+                if (!state.board[idx]) {
+                    placePiece(idx, p);
+                }
+            } 
+            // 2. 移动阶段 (自由移动到任意空位)
+            else {
+                if (state.selected === null) {
+                    if (state.board[idx] === p) {
+                        state.selected = idx;
+                    }
+                } else {
+                    // 只要点击的是空格，就允许移动 (不再判断相邻)
+                    if (state.board[idx] === null) {
+                        movePiece(state.selected, idx, p);
+                    } else if (state.board[idx] === p) {
+                        state.selected = idx; // 切换选中的棋子
+                    } else {
+                        state.selected = null; // 点对方棋子取消选中
+                    }
+                }
+            }
+            updateUI();
+        }
+
+        function placePiece(idx, p) {
+            state.board[idx] = p;
+            state.pieces[p]++;
+            checkEnd(idx);
+        }
+
+        function movePiece(from, to, p) {
+            state.board[from] = null;
+            state.board[to] = p;
+            state.selected = null;
+            checkEnd(to);
+        }
+
+        function checkEnd(lastIdx) {
+            const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            const win = winLines.find(line => line.every(i => state.board[i] === state.currentPlayer));
+            
+            if (win) {
+                state.isOver = true;
+                win.forEach(i => els.cells[i].classList.add('winner-cell'));
+            } else {
+                state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
+                if (state.vsAI && state.currentPlayer === 'O') {
+                    setTimeout(aiPlay, 700);
+                }
+            }
+        }
+
+        function aiPlay() {
+            const p = 'O';
+            const empties = state.board.map((v, i) => v === null ? i : null).filter(v => v !== null);
+            
+            if (state.pieces[p] < 3) {
+                placePiece(empties[Math.floor(Math.random() * empties.length)], p);
+            } else {
+                const myPieces = state.board.map((v, i) => v === p ? i : null).filter(v => v !== null);
+                const from = myPieces[Math.floor(Math.random() * myPieces.length)];
+                const to = empties[Math.floor(Math.random() * empties.length)];
+                movePiece(from, to, p);
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            els.cells.forEach((cell, i) => {
+                const val = state.board[i];
+                cell.innerText = val || '';
+                cell.className = `cell ${val ? 'p-'+val : ''}`;
+                if (state.selected === i) cell.classList.add('selected');
+                
+                // 只有在选中了棋子且当前格为空时，显示“可移动”提示
+                if (state.selected !== null && val === null) {
+                    cell.classList.add('can-move-to');
+                } else {
+                    cell.classList.remove('can-move-to');
+                }
+            });
+
+            if (state.isOver) {
+                els.status.innerText = (state.currentPlayer === 'X' ? '红方 (X)' : '蓝方 (O)') + " 获胜！";
+                els.status.style.color = "#2ed573";
+                els.hint.innerText = "对局结束，可点击重开";
+            } else {
+                const isRed = state.currentPlayer === 'X';
+                els.status.innerText = isRed ? '红方 (X) 回合' : '蓝方 (O) 回合';
+                els.status.style.color = isRed ? 'var(--red)' : 'var(--blue)';
+                
+                if (state.pieces[state.currentPlayer] < 3) {
+                    els.hint.innerText = `[ 放置阶段 ] 剩余 ${3 - state.pieces[state.currentPlayer]} 子`;
+                } else {
+                    els.hint.innerText = `[ 移动阶段 ] 可移动到任意空格`;
+                }
+            }
+        }
+
+        function reset() {
+            state.board = Array(9).fill(null);
+            state.currentPlayer = 'X';
+            state.pieces = { X: 0, O: 0 };
+            state.selected = null;
+            state.isOver = false;
+            els.cells.forEach(c => c.classList.remove('winner-cell'));
+            updateUI();
+        }
+
+        init();
+    </script>
+</body>
+</html>
