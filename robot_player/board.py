@@ -44,6 +44,7 @@ class Board:
             if b[x] != 0 and b[x] == b[y] == b[z]:
                 return b[x]
         return 0
+
     
     def __repr__(self):
         new_array = self.value.reshape(3, -1)
@@ -63,3 +64,7 @@ class Board:
             return -1
         else:
             return -100
+        
+    def clear(self):
+        self.value = np.zeros(shape=(9,), dtype=int)
+        
