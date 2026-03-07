@@ -1,10 +1,13 @@
-from board import Board
+import torch
 
 class Player:
-    def __init__(self, player_id: int, board: Board):
+    def __init__(self, player_id: int):
         self.player_id = player_id
-        self.board = board
         
-    def get_action(self) -> str:
+    def get_action(self, state: torch.Tensor) -> tuple[int, int, int]:
         message: str = input(f"Player {self.player_id}, please input your action: ")
-        return message
+        if ":" not in message:
+            return (self.player_id, int(message), int(message))
+        else:
+            original_index, new_index = map(int, message.split(":"))
+            return (self.player_id, original_index, new_index)
