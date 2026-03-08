@@ -8,16 +8,19 @@ class Board:
         self.player_id2 = player_id2
 
     def get_state(self, player_id: int) -> torch.Tensor:
-        state = np.zeros(shape=(9,))
-        for i in range(9):
-            if self.value[i] == player_id:
-                state[i] = 1
-            elif self.value[i] == 0:
-                state[i] = 0
-            else:
-                state[i] = -1
-        return torch.tensor(state.tolist(), dtype=torch.float32)
-    
+        # 使用 copy() 确保不影响原数组
+        b_copy = self.value.copy()
+        state = np.zeros(9, dtype=np.float32)
+
+        # 逻辑归一化：1 是自己，-1 是对手
+        state[b_copy == player_id] = 1.0
+        # 找到对手的 ID (假设 player_id 为 1, 则对手为 2; 反之亦然)
+        # 或者更通用的做法：
+        other_mask = (b_copy != player_id) & (b_copy != 0)
+        state[other_mask] = -1.0
+
+        return torch.from_numpy(state).clone()  # 确保内存独立
+
     def apply_action(self, action: tuple[int, int, int]):
         player_id, original_index, new_index = action
         if original_index == new_index:
@@ -60,13 +63,31 @@ class Board:
         return result
     
     def get_reward(self, player_id: int) -> float:
+        # 1. 获取归一化状态：1 是自己，-1 是对手
+        state = self.get_state(player_id) 
+        
         winner = self.get_winner()
         if winner == player_id:
-            return 100
-        elif winner == 0:
-            return -1
-        else:
-            return -100
+            return 100.0
+        if winner != 0: # 说明对手赢了
+            return -100.0
+
+        # 2. 基于归一化状态的中间奖励
+        mid_reward = 0.0
+        wins = [(0,1,2), (3,4,5), (6,7,8), (0,3,6), (1,4,7), (2,5,8), (0,4,8), (2,4,6)]
+        
+        for x, y, z in wins:
+            line = [state[x].item(), state[y].item(), state[z].item()]
+            my_count = line.count(1.0)
+            opp_count = line.count(-1.0)
+            empty_count = line.count(0.0)
+            
+            if my_count == 2 and empty_count == 1:
+                mid_reward += 10.0  # 离胜利只差一步
+            if opp_count == 2 and empty_count == 1:
+                mid_reward += 15.0  # 成功堵截对手的关键位（防守奖励通常设高一点）
+
+        return mid_reward - 1.0 # 步数惩罚，逼迫 AI 尽快获胜
         
     def clear(self):
         self.value = np.zeros(shape=(9,), dtype=int)
