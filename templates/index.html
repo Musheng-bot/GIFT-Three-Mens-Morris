@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -14,6 +15,10 @@
         }
 
         body {
+            background-image: url('{% static 'img/background.jpg' %}');
+            background-repeat: no-repeat;
+            background-size: 100%;
+            background-position: center;
             margin: 0; padding: 0;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh; background-color: var(--bg);
@@ -22,7 +27,7 @@
         }
 
         /* 顶部信息栏 */
-        .header { width: 100%; padding: 20px 0; text-align: center; }
+        .header { width: 100%; padding: 10px 0; text-align: center; }
         #status { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; color: #2f3542; }
         .sub-info { display: flex; justify-content: center; gap: 15px; font-size: 0.95rem; color: #7f8c8d; height: 24px; }
         .badge { background: #2f3542; color: white; padding: 2px 10px; border-radius: 4px; }
@@ -31,7 +36,7 @@
         .board-container {
             position: relative;
             padding: 20px;
-            background: #dfe4ea;
+            background: #c0c4c9ff;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
@@ -76,8 +81,24 @@
             display: flex; align-items: center; justify-content: center;
             color: white; font-weight: bold; background-size: cover;
         }
-        .piece.X { background-color: var(--red); box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4); }
-        .piece.O { background-color: var(--blue); box-shadow: 0 5px 15px rgba(46, 134, 222, 0.4); }
+        .piece.X { 
+            background-color: var(--red);
+            /* 替换为你喜欢的网络图片地址 */
+            background-image: url('{% static 'img/x.jpg' %}');
+            background-size: 100%; /* 缩放图片使其不占满整个圆圈 */
+            background-repeat: no-repeat;
+            background-position: center;
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4); 
+        }
+        .piece.O { 
+            background-color: var(--blue); 
+            /* 替换为你喜欢的网络图片地址 */
+            background-image: url('{% static 'img/o.jpg' %}');
+            background-size: 100%; /* 缩放图片使其不占满整个圆圈 */
+            background-repeat: no-repeat;
+            background-position: center;
+            box-shadow: 0 5px 15px rgba(46, 134, 222, 0.4); 
+        }
 
         .selected { transform: scale(1.1); border: 4px solid #2f3542; }
         .can-move-to { background: #e3fae6; border: 3px dashed #2ed573; }
@@ -97,6 +118,17 @@
         .mode-btn.active { background: #2f3542; color: white; border-color: #2f3542; }
 
         .hidden-node { display: none !important; }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.3);
+            padding-top: 5%;
+            height: 80%;
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -109,33 +141,35 @@
         </div>
     </div>
 
-    <div class="board-container">
-        <div id="board-overlay">
-            <span style="font-weight: bold; color: #57606f;">选择模式并点击开始</span>
-        </div>
-        
-        <svg class="lines-layer" viewBox="0 0 360 360">
-            <line x1="50" y1="50" x2="310" y2="50" />
-            <line x1="50" y1="180" x2="310" y2="180" />
-            <line x1="50" y1="310" x2="310" y2="310" />
-            <line x1="50" y1="50" x2="50" y2="310" />
-            <line x1="180" y1="50" x2="180" y2="310" />
-            <line x1="310" y1="50" x2="310" y2="310" />
-            <line x1="50" y1="50" x2="310" y2="310" />
-            <line x1="310" y1="50" x2="50" y2="310" />
-        </svg>
+    <div class="container">
+        <div class="board-container">
+            <div id="board-overlay">
+                <span style="font-weight: bold; color: #57606f;">选择模式并点击开始</span>
+            </div>
+            
+            <svg class="lines-layer" viewBox="0 0 360 360">
+                <line x1="50" y1="50" x2="310" y2="50" />
+                <line x1="50" y1="180" x2="310" y2="180" />
+                <line x1="50" y1="310" x2="310" y2="310" />
+                <line x1="50" y1="50" x2="50" y2="310" />
+                <line x1="180" y1="50" x2="180" y2="310" />
+                <line x1="310" y1="50" x2="310" y2="310" />
+                <line x1="50" y1="50" x2="310" y2="310" />
+                <line x1="310" y1="50" x2="50" y2="310" />
+            </svg>
 
-        <div class="board" id="board"></div>
-    </div>
-
-    <div class="controls">
-        <div class="mode-group" id="mode-selector">
-            <button class="mode-btn active" data-mode="pve">人机对战</button>
-            <button class="mode-btn" data-mode="pvp">双人对战</button>
+            <div class="board" id="board"></div>
         </div>
-        <button id="start-btn" class="btn btn-primary">开始游戏</button>
-        <button id="reset-btn" class="btn btn-outline hidden-node">重新开始</button>
-        <button id="stop-btn" class="btn btn-danger hidden-node">结束游戏</button>
+
+        <div class="controls">
+            <div class="mode-group" id="mode-selector">
+                <button class="mode-btn active" data-mode="pve">人机对战</button>
+                <button class="mode-btn" data-mode="pvp">双人对战</button>
+            </div>
+            <button id="start-btn" class="btn btn-primary">开始游戏</button>
+            <button id="reset-btn" class="btn btn-outline hidden-node">重新开始</button>
+            <button id="stop-btn" class="btn btn-danger hidden-node">结束游戏</button>
+        </div>
     </div>
 
     <script>
@@ -331,7 +365,9 @@
             const cells = document.querySelectorAll('.cell');
             cells.forEach((c, i) => {
                 const val = state.board[i];
-                c.innerHTML = val ? `<div class="piece ${val}">${val === 'X' ? '红方' : '蓝方'}</div>` : '';
+                c.innerHTML = val ? `<div class="piece ${val}">
+                    {% comment %} ${val === 'X' ? '红方' : '蓝方'} {% endcomment %}
+                </div>` : '';
                 c.classList.toggle('selected', state.selected === i);
                 const canMove = state.selected !== null && !state.board[i] && ADJACENT[state.selected].includes(i);
                 c.classList.toggle('can-move-to', canMove);
