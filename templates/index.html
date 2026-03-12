@@ -120,8 +120,9 @@
         .hidden-node { display: none !important; }
 
         .container {
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.5);
             padding-top: 5%;
+            padding-bottom: 5%;
             height: 80%;
             width: 50%;
             display: flex;
@@ -133,15 +134,15 @@
 </head>
 <body>
 
-    <div class="header">
-        <div id="status">三子棋</div>
-        <div class="sub-info">
-            <span id="phase-text" class="hidden-node">请开始游戏</span>
-            <span class="badge hidden-node">剩余 <span id="round-val">20</span> 回合</span>
-        </div>
-    </div>
-
     <div class="container">
+        <div class="header">
+            <div id="status">三子棋</div>
+            <div class="sub-info">
+                <span id="phase-text" class="hidden-node">请开始游戏</span>
+                <span class="badge hidden-node">剩余 <span id="round-val">20</span> 回合</span>
+            </div>
+        </div>
+
         <div class="board-container">
             <div id="board-overlay">
                 <span style="font-weight: bold; color: #57606f;">选择模式并点击开始</span>
