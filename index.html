@@ -223,6 +223,8 @@
         const playerSection = document.getElementById('player-id-section');
         const p1Input = document.getElementById('player1-id');
         const p2Input = document.getElementById('player2-id');
+        const playerid1 = '';
+        const playerid2 = '';
 
         els.modeBtns.forEach(btn => {
             btn.onclick = () => {
@@ -243,12 +245,10 @@
         // 4. 实时监听输入并存入变量
         p1Input.addEventListener('input', (e) => {
             state.playerIds.X = e.target.value;
-            console.log("当前玩家1 ID:", state.playerIds.X); // 调试用
         });
 
         p2Input.addEventListener('input', (e) => {
             state.playerIds.O = e.target.value;
-            console.log("当前玩家2 ID:", state.playerIds.O); // 调试用
         });
 
         function createBoard() {
@@ -272,13 +272,8 @@
             els.phase.classList.remove('hidden-node');
             els.badge.classList.remove('hidden-node');
             playerSection.classList.add('hidden-node');
-
-            if (state.playerIds.X === '') {
-                state.playerIds.X = '红方';
-            }
-            if (state.playerIds.O === '') {
-                state.playerIds.O = '蓝方';
-            }
+            playerid1 = state.playerIds.X;
+            playerid2 = state.playerIds.O;
             reset();
         }
 
@@ -463,8 +458,8 @@
             state.selected = null;
             state.isOver = false;
             state.roundsLeft = 20;
-            state.playerIds = {X:'', O:''};
 
+            state.playerIds = {X:'', O:''};
             p1Input.value = '';
             p2Input.value = '';
             updateUI();
