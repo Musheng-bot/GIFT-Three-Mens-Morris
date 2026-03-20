@@ -149,14 +149,14 @@
             </div>
             
             <svg class="lines-layer" viewBox="0 0 360 360">
-                <line x1="50" y1="50" x2="310" y2="50" />
-                <line x1="50" y1="180" x2="310" y2="180" />
-                <line x1="50" y1="310" x2="310" y2="310" />
-                <line x1="50" y1="50" x2="50" y2="310" />
-                <line x1="180" y1="50" x2="180" y2="310" />
-                <line x1="310" y1="50" x2="310" y2="310" />
-                <line x1="50" y1="50" x2="310" y2="310" />
-                <line x1="310" y1="50" x2="50" y2="310" />
+                <line x1="50" y1="50" x2="310" y2="50"></line>
+                <line x1="50" y1="180" x2="310" y2="180"></line>
+                <line x1="50" y1="310" x2="310" y2="310"></line>
+                <line x1="50" y1="50" x2="50" y2="310"></line>
+                <line x1="180" y1="50" x2="180" y2="310"></line>
+                <line x1="310" y1="50" x2="310" y2="310"></line>
+                <line x1="50" y1="50" x2="310" y2="310"></line>
+                <line x1="310" y1="50" x2="50" y2="310"></line>
             </svg>
 
             <div class="board" id="board"></div>
@@ -166,6 +166,18 @@
             <div class="mode-group" id="mode-selector">
                 <button class="mode-btn active" data-mode="pve">人机对战</button>
                 <button class="mode-btn" data-mode="pvp">双人对战</button>
+            </div>
+            <div class="mode-group hidden-node" id="player-id-section">
+                <div style="display: flex; flex-direction: column; gap: 5px; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label style="font-size: 0.8rem; width: 50px;">玩家1:</label>
+                        <input type="text" id="player1-id" placeholder="红方 ID" style="flex: 1; padding: 5px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label style="font-size: 0.8rem; width: 50px;">玩家2:</label>
+                        <input type="text" id="player2-id" placeholder="蓝方 ID" style="flex: 1; padding: 5px;">
+                    </div>
+                </div>
             </div>
             <button id="start-btn" class="btn btn-primary">开始游戏</button>
             <button id="reset-btn" class="btn btn-outline hidden-node">重新开始</button>
@@ -182,13 +194,18 @@
 
         let state = {
             isStarted: false,
-            gameMode: 'pve', // pve 或 pvp
+            gameMode: 'pve',
             board: Array(9).fill(null),
             currentPlayer: 'X',
             pieces: { X: 0, O: 0 },
             selected: null,
             isOver: false,
-            roundsLeft: 20
+            roundsLeft: 20,
+            // 新增：存储玩家ID
+            playerIds: {
+                X: '',
+                O: ''
+            }
         };
 
         const els = {
@@ -204,6 +221,37 @@
             modeBtns: document.querySelectorAll('.mode-btn')
         };
 
+        const playerSection = document.getElementById('player-id-section');
+        const p1Input = document.getElementById('player1-id');
+        const p2Input = document.getElementById('player2-id');
+
+        els.modeBtns.forEach(btn => {
+            btn.onclick = () => {
+                if(state.isStarted) return;
+                els.modeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.gameMode = btn.dataset.mode;
+
+                // --- 核心逻辑：判断是否显示 ID 输入框 ---
+                if (state.gameMode === 'pve') {
+                    playerSection.classList.add('hidden-node');
+                } else {
+                    playerSection.classList.remove('hidden-node');
+                }
+            };
+        });
+
+        // 4. 实时监听输入并存入变量
+        p1Input.addEventListener('input', (e) => {
+            state.playerIds.X = e.target.value;
+            console.log("当前玩家1 ID:", state.playerIds.X); // 调试用
+        });
+
+        p2Input.addEventListener('input', (e) => {
+            state.playerIds.O = e.target.value;
+            console.log("当前玩家2 ID:", state.playerIds.O); // 调试用
+        });
+
         function createBoard() {
             els.board.innerHTML = '';
             for (let i = 0; i < 9; i++) {
@@ -214,16 +262,6 @@
             }
         }
 
-        // --- 流程控制 ---
-
-        els.modeBtns.forEach(btn => {
-            btn.onclick = () => {
-                if(state.isStarted) return; // 游戏中禁止切模式
-                els.modeBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                state.gameMode = btn.dataset.mode;
-            };
-        });
 
         function startGame() {
             state.isStarted = true;
@@ -234,6 +272,14 @@
             els.stopBtn.classList.remove('hidden-node');
             els.phase.classList.remove('hidden-node');
             els.badge.classList.remove('hidden-node');
+            playerSection.classList.add('hidden-node');
+
+            if (state.playerIds.X === '') {
+                state.playerIds.X = '红方';
+            }
+            if (state.playerIds.O === '') {
+                state.playerIds.O = '蓝方';
+            }
             reset();
         }
 
@@ -249,6 +295,7 @@
             els.badge.classList.add('hidden-node');
             els.status.innerText = "三子棋";
             els.status.style.color = "#2f3542";
+            playerSection.classList.remove('hidden-node');
             reset();
         }
 
@@ -372,8 +419,9 @@
                 c.classList.toggle('selected', state.selected === i);
                 const canMove = state.selected !== null && !state.board[i] && ADJACENT[state.selected].includes(i);
                 c.classList.toggle('can-move-to', canMove);
-                
-                if (state.isOver && checkWin(state.board, val)) {
+
+                const isWin = checkWin(state.board, val) && val !== null;
+                if (state.isOver && isWin) {
                     if (getWinningLine(state.board, val).includes(i)) c.classList.add('winner-cell');
                 } else {
                     c.classList.remove('winner-cell');
@@ -383,7 +431,14 @@
             els.round.innerText = state.roundsLeft;
             if (state.isStarted) {
                 if (state.isOver) {
-                    els.status.innerText = state.roundsLeft <= 0 ? "平局" : (state.currentPlayer === 'X' ? "红方获胜！" : "蓝方获胜！");
+                    if (state.gameMode === 'pve') {
+                        els.status.innerText = state.roundsLeft <= 0 ? "平局" : (state.currentPlayer === 'X' ? "你过关！溥小牛甘拜下风" : "溥小牛获胜！\n怎么样，不简单吧？还得多练！");
+                    } else {
+                        els.status.innerText = state.roundsLeft <= 0 ? "平局" : (state.currentPlayer === 'X' ?
+                            (state.playerIds.X ? `${state.playerIds.X} 获胜！` : "红方获胜！"):
+                            (state.playerIds.O ? `${state.playerIds.O} 获胜！` : "蓝方获胜！")
+                        );
+                    }
                 } else {
                     const isX = state.currentPlayer === 'X';
                     if (state.gameMode === 'pve') {
@@ -409,6 +464,10 @@
             state.selected = null;
             state.isOver = false;
             state.roundsLeft = 20;
+            state.playerIds = {X:'', O:''};
+
+            p1Input.value = '';
+            p2Input.value = '';
             updateUI();
         }
 
