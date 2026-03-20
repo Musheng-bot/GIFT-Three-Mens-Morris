@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-{% load static %}
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +14,7 @@
         }
 
         body {
-            background-image: url('{% static 'img/background.jpg' %}');
+            background-image: url('img/background.jpg');
             background-repeat: no-repeat;
             background-size: 100%;
             background-position: center;
@@ -84,7 +83,7 @@
         .piece.X { 
             background-color: var(--red);
             /* 替换为你喜欢的网络图片地址 */
-            background-image: url('{% static 'img/x.jpg' %}');
+            background-image: url('img/x.jpg');
             background-size: 100%; /* 缩放图片使其不占满整个圆圈 */
             background-repeat: no-repeat;
             background-position: center;
@@ -93,7 +92,7 @@
         .piece.O { 
             background-color: var(--blue); 
             /* 替换为你喜欢的网络图片地址 */
-            background-image: url('{% static 'img/o.jpg' %}');
+            background-image: url('img/o.jpg');
             background-size: 100%; /* 缩放图片使其不占满整个圆圈 */
             background-repeat: no-repeat;
             background-position: center;
@@ -414,7 +413,7 @@
             cells.forEach((c, i) => {
                 const val = state.board[i];
                 c.innerHTML = val ? `<div class="piece ${val}">
-                    {% comment %} ${val === 'X' ? '红方' : '蓝方'} {% endcomment %}
+                    
                 </div>` : '';
                 c.classList.toggle('selected', state.selected === i);
                 const canMove = state.selected !== null && !state.board[i] && ADJACENT[state.selected].includes(i);
